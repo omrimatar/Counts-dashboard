@@ -12,9 +12,13 @@ function minutesToTime(mins) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+const AM_RANGE = ['07:00', '09:00'];
+const PM_RANGE = ['16:00', '19:00'];
+
 export default function FilterPanel({
   arms, vehicleTypes, filters, onChange,
   dataStartTime, dataEndTime, hasToArm,
+  onDisablePCU,
 }) {
   const dataMin = useMemo(() => timeToMinutes(dataStartTime || '00:00'), [dataStartTime]);
   const dataMax = useMemo(() => timeToMinutes(dataEndTime || '23:45') + 15, [dataEndTime]);
@@ -63,6 +67,28 @@ export default function FilterPanel({
     filters.vehicleTypeIds.length === 0 || filters.vehicleTypeIds.includes(vtId);
 
   const showSlider = dataStartTime && dataEndTime && dataMax > dataMin;
+
+  // AM/PM quick range helpers
+  const isRangeActive = (range) =>
+    filters.timeRange?.[0] === range[0] && filters.timeRange?.[1] === range[1];
+  const toggleQuickRange = (range) => {
+    if (isRangeActive(range)) {
+      onChange({ ...filters, timeRange: null });
+    } else {
+      onChange({ ...filters, timeRange: range });
+    }
+  };
+
+  // Vehicle quick presets
+  const busIds = vehicleTypes.filter(vt => /bus/i.test(vt.name)).map(vt => vt.id);
+  const isAllVehicles = filters.vehicleTypeIds.length === 0;
+  const isBusOnly = busIds.length > 0 &&
+    busIds.length === filters.vehicleTypeIds.length &&
+    busIds.every(id => filters.vehicleTypeIds.includes(id));
+  const handleBusOnly = () => {
+    onChange({ ...filters, vehicleTypeIds: busIds });
+    if (onDisablePCU) onDisablePCU();
+  };
 
   const fromCount = filters.fromArms.length;
   const toCount = filters.toArms.length;
@@ -118,6 +144,16 @@ export default function FilterPanel({
               onChange={e => handleHigh(Number(e.target.value))}
             />
           </div>
+          <div className="time-quick-btns">
+            <button
+              className={`quick-btn${isRangeActive(AM_RANGE) ? ' quick-btn-active' : ''}`}
+              onClick={() => toggleQuickRange(AM_RANGE)}
+            >AM Peak (07–09)</button>
+            <button
+              className={`quick-btn${isRangeActive(PM_RANGE) ? ' quick-btn-active' : ''}`}
+              onClick={() => toggleQuickRange(PM_RANGE)}
+            >PM Peak (16–19)</button>
+          </div>
         </div>
       )}
 
@@ -166,6 +202,19 @@ export default function FilterPanel({
           <label className="filter-label">
             Vehicle Types{vtCount > 0 && <span className="filter-count">({vtCount} of {vehicleTypes.length})</span>}
           </label>
+          <div className="time-quick-btns" style={{ marginBottom: 6 }}>
+            <button
+              className={`quick-btn${isAllVehicles ? ' quick-btn-active' : ''}`}
+              onClick={() => onChange({ ...filters, vehicleTypeIds: [] })}
+            >All</button>
+            {busIds.length > 0 && (
+              <button
+                className={`quick-btn${isBusOnly ? ' quick-btn-active' : ''}`}
+                onClick={handleBusOnly}
+                title="Select buses only and disable PCU weighting"
+              >Buses only (raw)</button>
+            )}
+          </div>
           <div className="checkbox-scroll">
             {vehicleTypes.map(vt => (
               <label key={vt.id} className="checkbox-item">

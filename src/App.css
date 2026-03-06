@@ -686,6 +686,39 @@ body {
   box-shadow: 0 1px 4px rgba(37,99,235,0.4);
 }
 
+/* ── Quick filter buttons ── */
+.time-quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.quick-btn {
+  padding: 4px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.quick-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.quick-btn-active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: white !important;
+}
+
 /* ── Checkbox lists ── */
 .checkbox-scroll {
   display: flex;

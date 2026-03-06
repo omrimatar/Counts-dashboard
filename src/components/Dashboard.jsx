@@ -65,6 +65,7 @@ export default function Dashboard({ data, onReset }) {
         dataStartTime={data.meta.startTime}
         dataEndTime={data.meta.endTime}
         hasToArm={hasToArm}
+        onDisablePCU={() => { setPcuMode(false); setPcuWeights({}); }}
       />
 
       <PCUPanel

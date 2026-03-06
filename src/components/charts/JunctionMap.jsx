@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 
 // ── Canvas & layout ─────────────────────────────────────────────────────────
-const W  = 1000, H  = 880;  // SVG viewBox size
-const CX = 500,  CY = 440;  // Intersection center
-const RW = 80;               // Road width (px) — unchanged
-const LO = 20;               // Lane offset from road centre — unchanged
-const HB = 165;              // Half-size of intersection box (box = 330×330)
-const MG = 85;               // Outer margin reserved for arm labels
+const W  = 1000, H  = 1000; // SVG viewBox size (square)
+const CX = 500,  CY = 500;  // Intersection centre
+const RW = 80;               // Road width (px)
+const LO = 20;               // Lane offset from road centre
+const HB = 300;              // Half-size of intersection box (box = 600×600)
+const MG = 70;               // Compact outer margin — just enough for arm labels
 
 // Intersection box corners
 const BL = CX - HB, BR = CX + HB;  // 335, 665
@@ -40,10 +40,18 @@ const EXIT = {
 
 // Label-box centres — parked beside each road arm, clear of arcs
 const LABEL_POS = {
-  top:    { x: CX - RW/2 - 78,          y: MG  + (BT - MG)      / 2 }, // left of north road
-  bottom: { x: CX + RW/2 + 78,          y: BB  + (H  - MG - BB)  / 2 }, // right of south road
-  left:   { x: MG  + (BL - MG)      / 2, y: CY - RW/2 - 36        }, // above west road
-  right:  { x: BR  + (W  - MG - BR)  / 2, y: CY + RW/2 + 36        }, // below east road
+  top:    { x: CX - RW/2 - 82,           y: MG  + (BT - MG)      / 2 }, // left of north road
+  bottom: { x: CX + RW/2 + 82,           y: BB  + (H  - MG - BB)  / 2 }, // right of south road
+  left:   { x: MG  + (BL - MG)      / 2, y: CY - RW/2 - 42        }, // above west road
+  right:  { x: BR  + (W  - MG - BR)  / 2, y: CY + RW/2 + 42        }, // below east road
+};
+
+// Directional arrows for from/to labels (from = entering junction, to = exiting)
+const SLOT_ARROWS = {
+  top:    { from: '↓', to: '↑' },
+  bottom: { from: '↑', to: '↓' },
+  left:   { from: '→', to: '←' },
+  right:  { from: '←', to: '→' },
 };
 
 // Brand colours per slot
@@ -89,9 +97,7 @@ function arcPoint(from, to, t = 0.5) {
 }
 
 function fmtVol(n) {
-  if (n >= 10000) return `${(n/1000).toFixed(0)}k`;
-  if (n >= 1000)  return `${(n/1000).toFixed(1)}k`;
-  return String(n);
+  return Math.round(n).toLocaleString();
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -173,6 +179,12 @@ export default function JunctionMap({ data, analytics, filters, pcuWeights }) {
   const armTotals = useMemo(() => {
     const t = {};
     movData.forEach(m => { t[m.fs] = (t[m.fs] || 0) + m.total; });
+    return t;
+  }, [movData]);
+
+  const armToTotals = useMemo(() => {
+    const t = {};
+    movData.forEach(m => { if (m.ts) t[m.ts] = (t[m.ts] || 0) + m.total; });
     return t;
   }, [movData]);
 
@@ -356,7 +368,7 @@ export default function JunctionMap({ data, analytics, filters, pcuWeights }) {
           const sw   = strokeW(m.total);
           const d    = makeArc(m.fs, m.ts);
           const mid  = arcPoint(m.fs, m.ts, 0.3);
-          const badgeW = Math.max(36, fmtVol(m.total).length * 7 + 12);
+          const badgeW = Math.max(44, fmtVol(m.total).length * 7 + 16);
 
           return (
             <g key={m.id}>
@@ -384,7 +396,7 @@ export default function JunctionMap({ data, analytics, filters, pcuWeights }) {
                   opacity={0.93}
                 />
                 <text x={mid.x} y={mid.y + 5}
-                  textAnchor="middle" fontSize={11} fontWeight={700} fill="white"
+                  textAnchor="middle" fontSize={12} fontWeight={700} fill="white"
                 >
                   {fmtVol(m.total)}
                 </text>
@@ -407,17 +419,24 @@ export default function JunctionMap({ data, analytics, filters, pcuWeights }) {
           const arm = slotMap[slot];
           if (!arm) return null;
           const { x, y } = LABEL_POS[slot];
-          const col   = COLORS[slot];
-          const total = armTotals[slot] || 0;
+          const col     = COLORS[slot];
+          const fromVol = armTotals[slot] || 0;
+          const toVol   = armToTotals[slot] || 0;
+          const arrows  = SLOT_ARROWS[slot];
 
           const lines = [];
-          lines.push({ text: arm.name, bold: true, col });
-          if (arm.direction) lines.push({ text: arm.direction, bold: false, col: '#64748b' });
-          if (total > 0)     lines.push({ text: total.toLocaleString(), bold: true, col });
+          lines.push({ text: arm.name, bold: true, col, sz: 13 });
+          if (arm.direction) lines.push({ text: arm.direction, bold: false, col: '#64748b', sz: 11 });
+          if (hasArcs) {
+            if (fromVol > 0) lines.push({ text: `${arrows.from} ${fromVol.toLocaleString()}`, bold: true,  col,       sz: 12 });
+            if (toVol   > 0) lines.push({ text: `${arrows.to}  ${toVol.toLocaleString()}`,   bold: false, col: '#64748b', sz: 12 });
+          } else if (fromVol > 0) {
+            lines.push({ text: fromVol.toLocaleString(), bold: true, col, sz: 12 });
+          }
 
-          const LH = 16, PX = 10, PY = 8;
+          const LH = 17, PX = 10, PY = 8;
           const bh = lines.length * LH + PY;
-          const bw = 136;
+          const bw = 155;
           const bx = x - bw / 2;
           const by = y - bh / 2;
 
@@ -437,7 +456,7 @@ export default function JunctionMap({ data, analytics, filters, pcuWeights }) {
                 <text key={i}
                   x={x} y={by + PY + 5 + (i + 1) * LH - 3}
                   textAnchor="middle"
-                  fontSize={i === 0 ? 13 : 11}
+                  fontSize={line.sz ?? 12}
                   fontWeight={line.bold ? 700 : 500}
                   fill={line.col}
                 >
