@@ -7,6 +7,12 @@
  * }
  * pcuWeights: { [vtId]: number } | null
  */
+function addMins(timeStr, m) {
+  const [h, mm] = timeStr.split(':').map(Number);
+  const t = h * 60 + mm + m;
+  return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+}
+
 export function computeAnalytics(data, filters = {}, pcuWeights = null) {
   const { movements, vehicleTypes, arms } = data;
   if (!movements?.length) return null;
@@ -106,14 +112,24 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
   const heavyPct = isPcuOnly ? null
     : (grandTotal > 0 ? ((heavyTotal / grandTotal) * 100).toFixed(1) : '0.0');
 
-  // Peak rolling 60-min window (4 × 15-min intervals)
+  // Infer interval length and how many intervals make one hour
+  const inferredInterval = intervals.length >= 2
+    ? (() => {
+        const [h1, m1] = intervals[0].timeStart.split(':').map(Number);
+        const [h2, m2] = intervals[1].timeStart.split(':').map(Number);
+        return Math.max(1, (h2 * 60 + m2) - (h1 * 60 + m1));
+      })()
+    : 15;
+  const ivPerHour = Math.max(1, Math.round(60 / inferredInterval));
+
+  // Peak rolling 60-min window
   let peakHour = null, peakHourVolume = 0;
   const ivCount = intervals.length;
-  for (let j = 0; j <= ivCount - 4; j++) {
-    const vol = intervals.slice(j, j + 4).reduce((s, iv) => s + iv.total, 0);
+  for (let j = 0; j <= ivCount - ivPerHour; j++) {
+    const vol = intervals.slice(j, j + ivPerHour).reduce((s, iv) => s + iv.total, 0);
     if (vol > peakHourVolume) {
       peakHourVolume = vol;
-      peakHour = `${intervals[j].timeStart}–${intervals[j + 3].timeEnd}`;
+      peakHour = `${intervals[j].timeStart}–${addMins(intervals[j].timeStart, 60)}`;
     }
   }
   if (!peakHour && intervals.length > 0) {
@@ -122,10 +138,13 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
     peakHourVolume = best.total;
   }
 
-  // Peak 15-min
+  // Peak 15-min (or inferred interval)
   let peak15 = null, peak15Volume = 0;
   intervals.forEach(iv => {
-    if (iv.total > peak15Volume) { peak15Volume = iv.total; peak15 = `${iv.timeStart}–${iv.timeEnd}`; }
+    if (iv.total > peak15Volume) {
+      peak15Volume = iv.total;
+      peak15 = `${iv.timeStart}–${iv.timeEnd ?? addMins(iv.timeStart, inferredInterval)}`;
+    }
   });
 
   // AM / PM volumes

@@ -70,7 +70,9 @@ function makeArc(from, to) {
   return `M${s.x} ${s.y} C${cp1.x} ${cp1.y} ${cp2.x} ${cp2.y} ${e.x} ${e.y}`;
 }
 
-function arcMidpoint(from, to) {
+// Evaluate cubic bezier at parameter t (0=start, 1=end)
+// t=0.3 places badge near the from-arm entry, distributing badges to 4 zones
+function arcPoint(from, to, t = 0.5) {
   if (from === to) {
     const en = ENTRY[from], ex = EXIT[from];
     const loop = { top: [0,-92], right: [92,0], bottom: [0,92], left: [-92,0] }[from];
@@ -79,10 +81,10 @@ function arcMidpoint(from, to) {
   const s = ENTRY[from], e = EXIT[to], T = 0.5;
   const cp1 = { x: s.x + (CX - s.x) * T, y: s.y + (CY - s.y) * T };
   const cp2 = { x: e.x + (CX - e.x) * T, y: e.y + (CY - e.y) * T };
-  const u = 0.5, v = 0.5;
+  const v = 1 - t;
   return {
-    x: v**3*s.x + 3*v**2*u*cp1.x + 3*v*u**2*cp2.x + u**3*e.x,
-    y: v**3*s.y + 3*v**2*u*cp1.y + 3*v*u**2*cp2.y + u**3*e.y,
+    x: v**3*s.x + 3*v**2*t*cp1.x + 3*v*t**2*cp2.x + t**3*e.x,
+    y: v**3*s.y + 3*v**2*t*cp1.y + 3*v*t**2*cp2.y + t**3*e.y,
   };
 }
 
@@ -93,7 +95,7 @@ function fmtVol(n) {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
-export default function JunctionMap({ data, analytics }) {
+export default function JunctionMap({ data, analytics, filters, pcuWeights }) {
   const [hovered, setHovered] = useState(null);   // movement id string
   const [tip, setTip] = useState({ x: 0, y: 0 });
 
@@ -124,21 +126,32 @@ export default function JunctionMap({ data, analytics }) {
     return m;
   }, [slotMap]);
 
-  // ── Compute movement data ────────────────────────────────────────────────
+  // ── Compute movement data (respects all active filters) ──────────────────
   const movData = useMemo(() => {
+    const { fromArms = [], toArms = [], vehicleTypeIds = [], timeRange = null } = filters || {};
+    const pcuMode = pcuWeights != null;
+    const activeVtIds = vehicleTypeIds.length > 0
+      ? new Set(vehicleTypeIds)
+      : new Set(vehicleTypes.map(vt => vt.id));
+    const heavyVts = vehicleTypes.filter(vt => vt.heavy && activeVtIds.has(vt.id));
+
     const arr = [];
     for (const mov of movements) {
+      if (fromArms.length > 0 && !fromArms.includes(mov.fromArm)) continue;
+      if (toArms.length > 0 && mov.toArm !== null && !toArms.includes(mov.toArm)) continue;
+
       const fs = arm2slot[mov.fromArm];
       if (!fs) continue;
       const ts = mov.toArm !== null ? arm2slot[mov.toArm] : null;
 
       let total = 0, heavy = 0;
-      mov.timeSeries.forEach(interval => {
-        vehicleTypes.forEach(vt => {
-          const c = interval.vehicles[vt.id] || 0;
-          total += c;
-          if (vt.heavy) heavy += c;
+      mov.timeSeries.forEach(iv => {
+        if (timeRange !== null && (iv.timeStart < timeRange[0] || iv.timeStart >= timeRange[1])) return;
+        activeVtIds.forEach(vtId => {
+          const raw = iv.vehicles[vtId] || 0;
+          total += pcuMode ? raw * (pcuWeights[vtId] ?? 1) : raw;
         });
+        heavyVts.forEach(vt => { heavy += iv.vehicles[vt.id] || 0; });
       });
       if (total === 0) continue;
 
@@ -154,7 +167,7 @@ export default function JunctionMap({ data, analytics }) {
     }
     // Sort heaviest first (drawn first = rendered behind lighter arcs)
     return arr.sort((a, b) => b.total - a.total);
-  }, [movements, arm2slot, arms, vehicleTypes]);
+  }, [movements, arm2slot, arms, vehicleTypes, filters, pcuWeights]);
 
   const maxVol   = useMemo(() => Math.max(...movData.map(m => m.total), 1), [movData]);
   const armTotals = useMemo(() => {
@@ -342,7 +355,7 @@ export default function JunctionMap({ data, analytics }) {
           const col  = isH ? '#0f172a' : COLORS[m.fs];
           const sw   = strokeW(m.total);
           const d    = makeArc(m.fs, m.ts);
-          const mid  = arcMidpoint(m.fs, m.ts);
+          const mid  = arcPoint(m.fs, m.ts, 0.3);
           const badgeW = Math.max(36, fmtVol(m.total).length * 7 + 12);
 
           return (

@@ -60,6 +60,15 @@ function timeToStr(val) {
   return null;
 }
 
+function snapToInterval(timeStr, intervalMins) {
+  if (!timeStr || !intervalMins || intervalMins <= 0) return timeStr;
+  const [h, m] = timeStr.split(':').map(Number);
+  const snapped = Math.round((h * 60 + m) / intervalMins) * intervalMins;
+  const sh = Math.floor(snapped / 60) % 24;
+  const sm = snapped % 60;
+  return `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}`;
+}
+
 function addMinutes(timeStr, mins) {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(':').map(Number);
@@ -201,8 +210,10 @@ function extractData(rows, fileName) {
         if (!r || !r.some(v => v !== null)) { i++; continue; }
         if (!isTimeCell(r[0])) break;
 
-        const timeStart = timeToStr(r[0]);
-        const timeEnd   = timeToStr(r[1]);
+        const snap      = meta.intervalMinutes || 15;
+        const timeStart = snapToInterval(timeToStr(r[0]), snap);
+        const rawEnd    = timeToStr(r[1]);
+        const timeEnd   = rawEnd ? snapToInterval(rawEnd, snap) : addMinutes(timeStart, snap);
         if (!timeStart) { i++; continue; }
 
         const movCounts = movDefs.map((_, idx) => {
@@ -235,6 +246,10 @@ function extractData(rows, fileName) {
 
     i++;
   }
+
+  const snap = meta.intervalMinutes || 15;
+  if (meta.startTime) meta.startTime = snapToInterval(meta.startTime, snap);
+  if (meta.endTime)   meta.endTime   = snapToInterval(meta.endTime,   snap);
 
   const vt = vehicleTypes.length > 0 ? vehicleTypes : DEFAULT_VEHICLE_TYPES;
   return { meta, arms, vehicleTypes: vt, movements };
@@ -317,7 +332,7 @@ function extractLuach5(rows, fileName) {
         const row = rows[r];
         if (!row) continue;
         if (!isTimeCell(row[0])) continue; // skip totals row or empty
-        const timeStart = timeToStr(row[0]);
+        const timeStart = snapToInterval(timeToStr(row[0]), interval);
         if (!timeStart) continue;
         const timeEnd = addMinutes(timeStart, interval);
         const val     = Number(row[col]) || 0;

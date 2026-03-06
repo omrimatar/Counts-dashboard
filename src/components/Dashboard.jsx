@@ -108,7 +108,12 @@ export default function Dashboard({ data, onReset }) {
               <DirectionChart analytics={analytics} />
               <TurnBreakdownChart analytics={analytics} />
             </div>
-            <JunctionMap data={data} analytics={analytics} />
+            <JunctionMap
+              data={data}
+              analytics={analytics}
+              filters={filters}
+              pcuWeights={pcuMode ? pcuWeights : null}
+            />
           </>
         )}
 
