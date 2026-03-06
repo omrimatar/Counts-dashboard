@@ -26,6 +26,12 @@ export default function AnalyticsPanel({ analytics, pcuMode }) {
   return (
     <div className="card">
       <h3 className="section-title">Key Metrics</h3>
+      <div className={`dominant-banner dominant-${peakDirection.toLowerCase()}`}>
+        <span className="dominant-label">Dominant Period</span>
+        <span className="dominant-value">{peakDirection} Peak</span>
+        <span className="dominant-sub">{peakDirection === 'AM' ? 'Morning heavier (07–09)' : 'Evening heavier (16–19)'}</span>
+        <span className="dominant-vols">AM {fmt(amVol)} · PM {fmt(pmVol)}</span>
+      </div>
       <div className="stats-grid">
         <StatCard
           label={totalLabel}
@@ -64,12 +70,6 @@ export default function AnalyticsPanel({ analytics, pcuMode }) {
           label="PM Peak (16–19)"
           value={fmt(pmVol)}
           sub="vehicles"
-        />
-        <StatCard
-          label="Dominant Period"
-          value={peakDirection}
-          sub={peakDirection === 'AM' ? 'Morning heavier' : 'Evening heavier'}
-          accent
         />
       </div>
     </div>

@@ -3,10 +3,10 @@ import { useState } from 'react';
 function getDefaultWeight(vt) {
   const name = (vt.name || '').toLowerCase();
   if (name.includes('motorcycle') || name.includes('bike')) return 0.5;
-  if (name.includes('truck') || name.includes('lorry')) return 3.0;
-  if (name.includes('bus')) return 2.5;
+  if (name.includes('truck') || name.includes('lorry')) return 2.0;
+  if (name.includes('bus')) return 1.8;
   if (!vt.heavy) return 1.0;
-  return 2.5;
+  return 1.8;
 }
 
 function buildDefaultWeights(vehicleTypes) {
