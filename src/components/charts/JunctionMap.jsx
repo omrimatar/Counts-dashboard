@@ -21,27 +21,29 @@ const ROADS = {
 };
 
 // Point where incoming traffic meets the intersection box
+// Right-hand traffic: enter on the RIGHT lane of each approach road
 const ENTRY = {
-  top:    { x: CX + LO, y: BT },
-  right:  { x: BR,      y: CY + LO },
-  bottom: { x: CX - LO, y: BB },
-  left:   { x: BL,      y: CY - LO },
+  top:    { x: CX - LO, y: BT },   // west lane  (right for southbound)
+  right:  { x: BR,      y: CY - LO }, // north lane (right for westbound)
+  bottom: { x: CX + LO, y: BB },   // east lane  (right for northbound)
+  left:   { x: BL,      y: CY + LO }, // south lane (right for eastbound)
 };
 
 // Point where outgoing traffic leaves the intersection box
+// Right-hand traffic: exit on the LEFT lane of each departure road
 const EXIT = {
-  top:    { x: CX - LO, y: BT },
-  right:  { x: BR,      y: CY - LO },
-  bottom: { x: CX + LO, y: BB },
-  left:   { x: BL,      y: CY + LO },
+  top:    { x: CX + LO, y: BT },   // east lane  (left = outbound northbound)
+  right:  { x: BR,      y: CY + LO }, // south lane (left = outbound eastbound)
+  bottom: { x: CX - LO, y: BB },   // west lane  (left = outbound southbound)
+  left:   { x: BL,      y: CY - LO }, // north lane (left = outbound westbound)
 };
 
-// Label-box centres (in outer margin areas, clamped to avoid overflow)
+// Label-box centres — parked beside each road arm, clear of arcs
 const LABEL_POS = {
-  top:    { x: CX,       y: 43      },
-  right:  { x: W - 72,   y: CY      },
-  bottom: { x: CX,       y: H - 43  },
-  left:   { x: 72,       y: CY      },
+  top:    { x: CX - RW/2 - 78,          y: MG  + (BT - MG)      / 2 }, // left of north road
+  bottom: { x: CX + RW/2 + 78,          y: BB  + (H  - MG - BB)  / 2 }, // right of south road
+  left:   { x: MG  + (BL - MG)      / 2, y: CY - RW/2 - 36        }, // above west road
+  right:  { x: BR  + (W  - MG - BR)  / 2, y: CY + RW/2 + 36        }, // below east road
 };
 
 // Brand colours per slot
@@ -288,35 +290,43 @@ export default function JunctionMap({ data, analytics }) {
         <line x1={BL} y1={CY} x2={BR} y2={CY} stroke="#94a3b8" strokeWidth={1} opacity={0.5} />
 
         {/* ── Direction arrows on roads (shows traffic flow direction) ──────── */}
+        {/* Right-hand traffic: incoming on right lane, outgoing on left lane    */}
         {SLOT_ORDER.map(slot => {
           if (!slotMap[slot]) return null;
           const r = ROADS[slot];
           const vert = slot === 'top' || slot === 'bottom';
-          // Outgoing lane arrow (pointing away from intersection)
           const col = COLORS[slot];
           if (vert) {
-            const mx = slot === 'top' ? CX - LO : CX + LO;
-            const my = r.y + r.h / 2;
-            const dy = slot === 'top' ? -8 : 8;
+            // top: southbound enters on west lane (CX-LO), exits on east lane (CX+LO)
+            // bottom: northbound enters on east lane (CX+LO), exits on west lane (CX-LO)
+            const inX  = slot === 'top' ? CX - LO : CX + LO;
+            const outX = slot === 'top' ? CX + LO : CX - LO;
+            const my   = r.y + r.h / 2;
+            const dy   = slot === 'top' ? 8 : -8;  // incoming points toward intersection
             return (
               <g key={`flow-${slot}`} opacity={0.45}>
                 {/* Incoming arrow (toward intersection) */}
-                <polygon points={`${CX+LO-5},${my-dy} ${CX+LO+5},${my-dy} ${CX+LO},${my+dy}`}
+                <polygon points={`${inX-5},${my-dy} ${inX+5},${my-dy} ${inX},${my+dy}`}
                   fill={col} />
                 {/* Outgoing arrow (away from intersection) */}
-                <polygon points={`${mx-5},${my+dy} ${mx+5},${my+dy} ${mx},${my-dy}`}
+                <polygon points={`${outX-5},${my+dy} ${outX+5},${my+dy} ${outX},${my-dy}`}
                   fill="#64748b" />
               </g>
             );
           } else {
-            const my = slot === 'left' ? CY - LO : CY + LO;
-            const mx = r.x + r.w / 2;
-            const dx = slot === 'left' ? -8 : 8;
+            // left: eastbound enters on south lane (CY+LO), exits on north lane (CY-LO)
+            // right: westbound enters on north lane (CY-LO), exits on south lane (CY+LO)
+            const inY  = slot === 'left' ? CY + LO : CY - LO;
+            const outY = slot === 'left' ? CY - LO : CY + LO;
+            const mx   = r.x + r.w / 2;
+            const dx   = slot === 'left' ? 8 : -8;  // incoming points toward intersection
             return (
               <g key={`flow-${slot}`} opacity={0.45}>
-                <polygon points={`${mx-dx},${CY+LO-5} ${mx-dx},${CY+LO+5} ${mx+dx},${CY+LO}`}
+                {/* Incoming arrow (toward intersection) */}
+                <polygon points={`${mx-dx},${inY-5} ${mx-dx},${inY+5} ${mx+dx},${inY}`}
                   fill={col} />
-                <polygon points={`${mx+dx},${my-5} ${mx+dx},${my+5} ${mx-dx},${my}`}
+                {/* Outgoing arrow (away from intersection) */}
+                <polygon points={`${mx+dx},${outY-5} ${mx+dx},${outY+5} ${mx-dx},${outY}`}
                   fill="#64748b" />
               </g>
             );
