@@ -62,14 +62,14 @@ export default function AnalyticsPanel({ analytics, pcuMode }) {
           accent
         />
         <StatCard
-          label="AM Peak (07–09)"
+          label="AM Peak Hour (07–09)"
           value={fmt(amVol)}
-          sub="vehicles"
+          sub="best 1-hr in AM window"
         />
         <StatCard
-          label="PM Peak (16–19)"
+          label="PM Peak Hour (16–19)"
           value={fmt(pmVol)}
-          sub="vehicles"
+          sub="best 1-hr in PM window"
         />
       </div>
     </div>

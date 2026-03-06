@@ -156,13 +156,19 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
     ? +(peakHourVolume / (ivPerHour * peak15Volume)).toFixed(2)
     : null;
 
-  // AM / PM volumes
-  const amVol = intervals
-    .filter(iv => iv.timeStart >= '07:00' && iv.timeStart < '09:00')
-    .reduce((s, iv) => s + iv.total, 0);
-  const pmVol = intervals
-    .filter(iv => iv.timeStart >= '16:00' && iv.timeStart < '19:00')
-    .reduce((s, iv) => s + iv.total, 0);
+  // AM / PM — best rolling 1-hour peak within each period
+  const peakInWindow = (ivs) => {
+    let best = 0;
+    for (let j = 0; j <= ivs.length - ivPerHour; j++) {
+      const vol = ivs.slice(j, j + ivPerHour).reduce((s, iv) => s + iv.total, 0);
+      if (vol > best) best = vol;
+    }
+    // fallback when period is shorter than one hour
+    if (best === 0 && ivs.length > 0) best = ivs.reduce((s, iv) => s + iv.total, 0);
+    return best;
+  };
+  const amVol = peakInWindow(intervals.filter(iv => iv.timeStart >= '07:00' && iv.timeStart < '09:00'));
+  const pmVol = peakInWindow(intervals.filter(iv => iv.timeStart >= '16:00' && iv.timeStart < '19:00'));
 
   // Volume by from-arm
   const volumeByArm = {};
