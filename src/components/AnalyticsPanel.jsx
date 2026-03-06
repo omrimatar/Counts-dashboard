@@ -17,21 +17,22 @@ export default function AnalyticsPanel({ analytics }) {
     amVol, pmVol, peakDirection,
   } = analytics;
 
-  const fmt = n => n?.toLocaleString() ?? '—';
+  const isPcuOnly = heavyPct === null;
+  const fmt = n => (n !== null && n !== undefined) ? n.toLocaleString() : '—';
 
   return (
     <div className="card">
       <h3 className="section-title">Key Metrics</h3>
       <div className="stats-grid">
         <StatCard
-          label="Total Vehicles"
+          label={isPcuOnly ? 'Total Volume (PCU)' : 'Total Vehicles'}
           value={fmt(grandTotal)}
           sub="all directions"
         />
         <StatCard
           label="Heavy Vehicles"
-          value={`${heavyPct}%`}
-          sub={`${fmt(heavyTotal)} vehicles`}
+          value={isPcuOnly ? 'N/A' : `${heavyPct}%`}
+          sub={isPcuOnly ? 'Not available for PCU files' : `${fmt(heavyTotal)} vehicles`}
           accent
         />
         <StatCard

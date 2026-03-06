@@ -1,24 +1,30 @@
 import { useState } from 'react';
 import FileUpload from './components/FileUpload';
 import Dashboard from './components/Dashboard';
-import { parseExcelFile } from './utils/excelParser';
+import { parseExcelFile, SheetNotFoundError } from './utils/excelParser';
 
 export default function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [sheetSuggestions, setSheetSuggestions] = useState(null);
 
   const handleFile = async file => {
     setLoading(true);
     setError(null);
+    setSheetSuggestions(null);
     try {
       const parsed = await parseExcelFile(file);
       if (!parsed.movements.length) {
-        throw new Error('No movement data found. The file may use an unsupported format.');
+        throw new Error('No movement data found after parsing. The file structure may differ from expected.');
       }
       setData(parsed);
     } catch (e) {
-      setError(e.message);
+      if (e instanceof SheetNotFoundError) {
+        setSheetSuggestions(e.suggestions);
+      } else {
+        setError(e.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -27,6 +33,7 @@ export default function App() {
   const handleReset = () => {
     setData(null);
     setError(null);
+    setSheetSuggestions(null);
   };
 
   return (
@@ -57,6 +64,23 @@ export default function App() {
             {error && (
               <div className="error-box">
                 <strong>Could not parse file:</strong> {error}
+              </div>
+            )}
+            {sheetSuggestions && (
+              <div className="suggestions-box">
+                <p className="suggestions-title">No supported sheet found in this file.</p>
+                <p className="suggestions-sub">Supported sheets: <code>data</code> (full counts) or <code>לוח 5</code> (PCU summary)</p>
+                <table className="suggestions-table">
+                  <thead><tr><th>Sheet</th><th>Description</th></tr></thead>
+                  <tbody>
+                    {sheetSuggestions.map(s => (
+                      <tr key={s.name}>
+                        <td><code>{s.name}</code></td>
+                        <td>{s.hint}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

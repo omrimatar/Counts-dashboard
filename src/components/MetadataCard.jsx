@@ -1,3 +1,9 @@
+const FILE_TYPE_STYLES = {
+  full:    { cls: 'badge-green',  icon: '✓' },
+  summary: { cls: 'badge-yellow', icon: '~' },
+  queue:   { cls: 'badge-orange', icon: '!' },
+};
+
 export default function MetadataCard({ meta, arms }) {
   const fields = [
     { label: 'Intersection', value: meta.name },
@@ -11,6 +17,8 @@ export default function MetadataCard({ meta, arms }) {
     { label: 'Completeness', value: meta.completeness },
   ].filter(f => f.value);
 
+  const typeStyle = FILE_TYPE_STYLES[meta.fileType] || {};
+
   return (
     <div className="card meta-card">
       <div className="card-header">
@@ -19,6 +27,16 @@ export default function MetadataCard({ meta, arms }) {
         </h2>
         <span className="badge">{meta.date || ''}</span>
       </div>
+
+      {meta.fileTypeLabel && (
+        <div className={`file-type-banner ${typeStyle.cls || ''}`}>
+          <span className="file-type-icon">{typeStyle.icon}</span>
+          <div>
+            <strong>{meta.fileTypeLabel}</strong>
+            {meta.fileTypeNote && <span className="file-type-note"> — {meta.fileTypeNote}</span>}
+          </div>
+        </div>
+      )}
 
       <div className="meta-grid">
         {fields.map(f => (

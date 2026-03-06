@@ -54,9 +54,11 @@ export function computeAnalytics(data, filters = {}) {
   });
 
   const grandTotal  = vehicleTypes.reduce((s, vt) => s + (totalByVehicle[vt.id] || 0), 0);
-  const heavyTotal  = vehicleTypes.filter(vt => vt.heavy).reduce((s, vt) => s + (totalByVehicle[vt.id] || 0), 0);
-  const lightTotal  = grandTotal - heavyTotal;
-  const heavyPct    = grandTotal > 0 ? ((heavyTotal / grandTotal) * 100).toFixed(1) : '0.0';
+  // PCU-only files (לוח 5) have no vehicle type breakdown — heavy % is unavailable
+  const isPcuOnly   = vehicleTypes.length === 1 && vehicleTypes[0].pcuOnly;
+  const heavyTotal  = isPcuOnly ? null : vehicleTypes.filter(vt => vt.heavy).reduce((s, vt) => s + (totalByVehicle[vt.id] || 0), 0);
+  const lightTotal  = isPcuOnly ? null : grandTotal - heavyTotal;
+  const heavyPct    = isPcuOnly ? null : (grandTotal > 0 ? ((heavyTotal / grandTotal) * 100).toFixed(1) : '0.0');
 
   // Peak rolling 60-min window (4 × 15-min intervals)
   let peakHour = null, peakHourVolume = 0;
