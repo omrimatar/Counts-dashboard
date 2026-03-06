@@ -8,7 +8,7 @@ function StatCard({ label, value, sub, accent }) {
   );
 }
 
-export default function AnalyticsPanel({ analytics }) {
+export default function AnalyticsPanel({ analytics, pcuMode }) {
   if (!analytics) return null;
   const {
     grandTotal, heavyTotal, heavyPct,
@@ -19,14 +19,16 @@ export default function AnalyticsPanel({ analytics }) {
 
   const isPcuOnly = heavyPct === null;
   const fmt = n => (n !== null && n !== undefined) ? n.toLocaleString() : '—';
+  const totalLabel = isPcuOnly ? 'Total Volume (PCU)'
+    : pcuMode ? 'Total Vehicles (PCU)' : 'Total Vehicles';
 
   return (
     <div className="card">
       <h3 className="section-title">Key Metrics</h3>
       <div className="stats-grid">
         <StatCard
-          label={isPcuOnly ? 'Total Volume (PCU)' : 'Total Vehicles'}
-          value={fmt(grandTotal)}
+          label={totalLabel}
+          value={pcuMode ? (grandTotal ?? 0).toFixed(0) : fmt(grandTotal)}
           sub="all directions"
         />
         <StatCard

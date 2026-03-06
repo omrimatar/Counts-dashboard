@@ -9,10 +9,7 @@ export default function VolumeTimeSeries({ analytics, chartView }) {
   const { hourlyData, intervals, peakHour } = analytics;
 
   const data = chartView === '15min'
-    ? intervals.map(iv => ({
-        time: iv.timeStart,
-        Volume: Object.values(iv.vehicles).reduce((a, b) => a + b, 0),
-      }))
+    ? intervals.map(iv => ({ time: iv.timeStart, Volume: iv.total ?? 0 }))
     : hourlyData;
 
   const peakStart = peakHour?.split('–')[0];
