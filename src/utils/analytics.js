@@ -106,11 +106,15 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
     activeVtIds.has(vt.id) ? s + getCount({ [vt.id]: totalByVehicle[vt.id] }, vt.id) : s, 0);
 
   const isPcuOnly = vehicleTypes.length === 1 && vehicleTypes[0].pcuOnly;
+
+  // Heavy % always uses raw vehicle counts — unaffected by PCU weighting
   const heavyTotal = isPcuOnly ? null
-    : heavyVts.reduce((s, vt) => s + getCount({ [vt.id]: totalByVehicle[vt.id] }, vt.id), 0);
-  const lightTotal = isPcuOnly ? null : grandTotal - heavyTotal;
+    : heavyVts.reduce((s, vt) => s + (totalByVehicle[vt.id] || 0), 0);
+  const rawActiveTotal = isPcuOnly ? null
+    : vehicleTypes.reduce((s, vt) => activeVtIds.has(vt.id) ? s + (totalByVehicle[vt.id] || 0) : s, 0);
+  const lightTotal = isPcuOnly ? null : (rawActiveTotal - heavyTotal);
   const heavyPct = isPcuOnly ? null
-    : (grandTotal > 0 ? ((heavyTotal / grandTotal) * 100).toFixed(1) : '0.0');
+    : (rawActiveTotal > 0 ? ((heavyTotal / rawActiveTotal) * 100).toFixed(1) : '0.0');
 
   // Infer interval length and how many intervals make one hour
   const inferredInterval = intervals.length >= 2

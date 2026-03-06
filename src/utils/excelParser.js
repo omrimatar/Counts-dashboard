@@ -247,9 +247,12 @@ function extractData(rows, fileName) {
     i++;
   }
 
-  const snap = meta.intervalMinutes || 15;
-  if (meta.startTime) meta.startTime = snapToInterval(meta.startTime, snap);
-  if (meta.endTime)   meta.endTime   = snapToInterval(meta.endTime,   snap);
+  // Use actual data time range (more reliable than metadata header rows)
+  const allTimes = movements.flatMap(m => m.timeSeries.map(t => t.timeStart)).sort();
+  if (allTimes.length) {
+    meta.startTime = allTimes[0];
+    meta.endTime   = allTimes[allTimes.length - 1];
+  }
 
   const vt = vehicleTypes.length > 0 ? vehicleTypes : DEFAULT_VEHICLE_TYPES;
   return { meta, arms, vehicleTypes: vt, movements };
