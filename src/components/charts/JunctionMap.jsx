@@ -1,16 +1,16 @@
 import { useState, useMemo } from 'react';
 
 // ── Canvas & layout ─────────────────────────────────────────────────────────
-const W  = 820, H  = 700;   // SVG viewBox size
-const CX = 410, CY = 350;   // Intersection center
-const RW = 80;               // Road width (px)
-const LO = 20;               // Lane offset from road centre
-const HB = 100;              // Half-size of intersection box
-const MG = 82;               // Outer margin reserved for arm labels
+const W  = 1000, H  = 880;  // SVG viewBox size
+const CX = 500,  CY = 440;  // Intersection center
+const RW = 80;               // Road width (px) — unchanged
+const LO = 20;               // Lane offset from road centre — unchanged
+const HB = 165;              // Half-size of intersection box (box = 330×330)
+const MG = 85;               // Outer margin reserved for arm labels
 
 // Intersection box corners
-const BL = CX - HB, BR = CX + HB;
-const BT = CY - HB, BB = CY + HB;
+const BL = CX - HB, BR = CX + HB;  // 335, 665
+const BT = CY - HB, BB = CY + HB;  // 275, 605
 
 // Road rectangles (extend from margin to box edge)
 const ROADS = {
@@ -38,10 +38,10 @@ const EXIT = {
 
 // Label-box centres (in outer margin areas, clamped to avoid overflow)
 const LABEL_POS = {
-  top:    { x: CX,       y: 42  },
-  right:  { x: W - 70,   y: CY  },
-  bottom: { x: CX,       y: H - 42 },
-  left:   { x: 70,       y: CY  },
+  top:    { x: CX,       y: 43      },
+  right:  { x: W - 72,   y: CY      },
+  bottom: { x: CX,       y: H - 43  },
+  left:   { x: 72,       y: CY      },
 };
 
 // Brand colours per slot
@@ -59,7 +59,7 @@ function makeArc(from, to) {
   if (from === to) {
     // U-turn: small loop outside the intersection box
     const en = ENTRY[from], ex = EXIT[from];
-    const loop = { top: [0,-72], right: [72,0], bottom: [0,72], left: [-72,0] }[from];
+    const loop = { top: [0,-92], right: [92,0], bottom: [0,92], left: [-92,0] }[from];
     return `M${en.x} ${en.y} C${en.x+loop[0]} ${en.y+loop[1]} ${ex.x+loop[0]} ${ex.y+loop[1]} ${ex.x} ${ex.y}`;
   }
   const s = ENTRY[from], e = EXIT[to], T = 0.5;
@@ -71,7 +71,7 @@ function makeArc(from, to) {
 function arcMidpoint(from, to) {
   if (from === to) {
     const en = ENTRY[from], ex = EXIT[from];
-    const loop = { top: [0,-72], right: [72,0], bottom: [0,72], left: [-72,0] }[from];
+    const loop = { top: [0,-92], right: [92,0], bottom: [0,92], left: [-92,0] }[from];
     return { x: (en.x + ex.x) / 2 + loop[0], y: (en.y + ex.y) / 2 + loop[1] };
   }
   const s = ENTRY[from], e = EXIT[to], T = 0.5;
