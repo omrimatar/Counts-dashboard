@@ -6,13 +6,15 @@ import {
 export default function VolumeTimeSeries({ analytics, chartView }) {
   if (!analytics) return null;
 
-  const { hourlyData, intervals, peakHour } = analytics;
+  const { hourlyData, intervals, peakHour, peak15 } = analytics;
 
   const data = chartView === '15min'
     ? intervals.map(iv => ({ time: iv.timeStart, Volume: iv.total ?? 0 }))
     : hourlyData;
 
-  const peakStart = peakHour?.split('–')[0];
+  const peakStart = chartView === '15min'
+    ? peak15?.split('–')[0]
+    : peakHour?.split('–')[0];
 
   return (
     <div className="card">

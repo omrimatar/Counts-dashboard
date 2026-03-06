@@ -75,11 +75,35 @@ export default function RawDataTable({ data, filters, pcuWeights }) {
     return <span>{sortDir === 1 ? ' ↑' : ' ↓'}</span>;
   };
 
+  const exportCSV = () => {
+    const headers = ['Time', 'From Arm', 'To Arm', 'Turn', pcuMode ? 'Volume (PCU)' : 'Volume'];
+    const csvRows = [headers.join(',')];
+    sorted.forEach(r => {
+      csvRows.push([
+        r.time,
+        `"${r.fromArm}"`,
+        `"${r.toArm}"`,
+        r.turn,
+        pcuMode ? r.volume.toFixed(1) : r.volume,
+      ].join(','));
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'counts_data.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="card">
       <div className="card-header">
         <h3 className="section-title" style={{ margin: 0 }}>Raw Data</h3>
-        <span className="badge">{rows.length.toLocaleString()} rows</span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span className="badge">{rows.length.toLocaleString()} rows</span>
+          <button className="btn-ghost" onClick={exportCSV} title="Download as CSV">⬇ CSV</button>
+        </div>
       </div>
 
       <div className="table-wrapper">

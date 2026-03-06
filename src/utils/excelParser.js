@@ -45,8 +45,8 @@ const VT_EN_MAP = {
 function timeToStr(val) {
   if (!val && val !== 0) return null;
   if (val instanceof Date) {
-    const h = val.getUTCHours();
-    const m = val.getUTCMinutes();
+    const h = val.getHours();
+    const m = val.getMinutes();
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
   if (typeof val === 'number') {

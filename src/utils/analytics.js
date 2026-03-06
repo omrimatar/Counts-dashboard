@@ -151,6 +151,11 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
     }
   });
 
+  // Peak Hour Factor
+  const phf = (peakHourVolume > 0 && peak15Volume > 0)
+    ? +(peakHourVolume / (ivPerHour * peak15Volume)).toFixed(2)
+    : null;
+
   // AM / PM volumes
   const amVol = intervals
     .filter(iv => iv.timeStart >= '07:00' && iv.timeStart < '09:00')
@@ -187,6 +192,7 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
   };
   const directionData = Object.entries(volumeByArm).map(([id, vol]) => ({
     name: armLabel(Number(id)),
+    armId: Number(id),
     Volume: vol,
   }));
 
@@ -273,9 +279,26 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
       heavyPct: total > 0 ? +((heavy / total) * 100).toFixed(1) : 0,
     }));
 
+  // Per-arm hourly breakdown (for heatmap)
+  const allHours = Array.from(new Set(intervals.map(iv => iv.timeStart.slice(0, 2) + ':00'))).sort();
+  const armHourlyData = arms.map(arm => {
+    const armMovs = filtered.filter(m => m.fromArm === arm.id);
+    const hourMap = {};
+    allHours.forEach(h => { hourMap[h] = 0; });
+    armMovs.forEach(m => {
+      m.timeSeries.forEach(ts => {
+        if (timeRange !== null && (ts.timeStart < timeRange[0] || ts.timeStart >= timeRange[1])) return;
+        const h = ts.timeStart.slice(0, 2) + ':00';
+        activeVtIds.forEach(vtId => { hourMap[h] = (hourMap[h] || 0) + getCount(ts.vehicles, vtId); });
+      });
+    });
+    return { armId: arm.id, armName: arm.name, hours: allHours, hourlyVols: hourMap };
+  }).filter(a => Object.values(a.hourlyVols).some(v => v > 0));
+
   return {
     pcuMode,
     grandTotal, heavyTotal, lightTotal, heavyPct,
+    phf,
     peakHour, peakHourVolume,
     peak15, peak15Volume,
     amVol, pmVol,
@@ -289,6 +312,7 @@ export function computeAnalytics(data, filters = {}, pcuWeights = null) {
     perArmAMPM,
     perArmHeavy,
     hourlyHeavyData,
+    armHourlyData,
   };
 }
 

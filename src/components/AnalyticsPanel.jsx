@@ -12,6 +12,7 @@ export default function AnalyticsPanel({ analytics, pcuMode }) {
   if (!analytics) return null;
   const {
     grandTotal, heavyTotal, heavyPct,
+    phf,
     peakHour, peakHourVolume,
     peak15, peak15Volume,
     amVol, pmVol, peakDirection,
@@ -47,6 +48,12 @@ export default function AnalyticsPanel({ analytics, pcuMode }) {
           label="Peak 15-min"
           value={peak15 ?? '—'}
           sub={`${fmt(peak15Volume)} vehicles`}
+        />
+        <StatCard
+          label="Peak Hour Factor"
+          value={phf != null ? phf.toFixed(2) : '—'}
+          sub="PHF = peak hr / (4 × peak 15)"
+          accent
         />
         <StatCard
           label="AM Peak (07–09)"

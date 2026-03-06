@@ -10,6 +10,9 @@ import TurnBreakdownChart from './charts/TurnBreakdownChart';
 import JunctionMap from './charts/JunctionMap';
 import RawDataTable from './RawDataTable';
 import AdvancedAnalysis from './AdvancedAnalysis';
+import TurnMatrix from './TurnMatrix';
+import HourlyHeatmap from './HourlyHeatmap';
+import VCPanel from './VCPanel';
 import { computeAnalytics } from '../utils/analytics';
 
 const DEFAULT_FILTERS = {
@@ -25,20 +28,34 @@ export default function Dashboard({ data, onReset }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [pcuMode, setPcuMode] = useState(false);
   const [pcuWeights, setPcuWeights] = useState({});
+  const [armRenames, setArmRenames] = useState({});
+
+  // Apply arm renames to produce effectiveData used everywhere
+  const effectiveData = useMemo(() => ({
+    ...data,
+    arms: data.arms.map(arm => ({
+      ...arm,
+      name: armRenames[arm.id] || arm.name,
+    })),
+  }), [data, armRenames]);
 
   const hasToArm = useMemo(
-    () => data.movements.some(m => m.toArm !== null),
-    [data.movements]
+    () => effectiveData.movements.some(m => m.toArm !== null),
+    [effectiveData.movements]
   );
 
   const analytics = useMemo(
-    () => computeAnalytics(data, filters, pcuMode ? pcuWeights : null),
-    [data, filters, pcuMode, pcuWeights]
+    () => computeAnalytics(effectiveData, filters, pcuMode ? pcuWeights : null),
+    [effectiveData, filters, pcuMode, pcuWeights]
   );
 
   const handlePCUChange = (mode, weights) => {
     setPcuMode(mode);
     setPcuWeights(weights);
+  };
+
+  const handleRenameArm = (armId, newName) => {
+    setArmRenames(prev => ({ ...prev, [armId]: newName }));
   };
 
   const TABS = [
@@ -48,32 +65,44 @@ export default function Dashboard({ data, onReset }) {
     { id: 'data',      label: 'Data Table' },
   ];
 
+  const noData = analytics && analytics.grandTotal === 0;
+
   return (
     <div className="dashboard">
       {/* Top bar */}
       <div className="dash-topbar">
-        <span className="dash-filename">{data.meta.fileName}</span>
-        <button className="btn-ghost" onClick={onReset}>← Load another file</button>
+        <span className="dash-filename">{effectiveData.meta.fileName}</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-ghost" onClick={() => window.print()}>🖨 Print</button>
+          <button className="btn-ghost" onClick={onReset}>← Load another file</button>
+        </div>
       </div>
 
       {/* Always-visible: Filter + PCU */}
       <FilterPanel
-        arms={data.arms}
-        vehicleTypes={data.vehicleTypes}
+        arms={effectiveData.arms}
+        vehicleTypes={effectiveData.vehicleTypes}
         filters={filters}
         onChange={setFilters}
-        dataStartTime={data.meta.startTime}
-        dataEndTime={data.meta.endTime}
+        dataStartTime={effectiveData.meta.startTime}
+        dataEndTime={effectiveData.meta.endTime}
         hasToArm={hasToArm}
         onDisablePCU={() => { setPcuMode(false); setPcuWeights({}); }}
       />
 
       <PCUPanel
-        vehicleTypes={data.vehicleTypes}
+        vehicleTypes={effectiveData.vehicleTypes}
         pcuMode={pcuMode}
         pcuWeights={pcuWeights}
         onChange={handlePCUChange}
       />
+
+      {/* No-data warning */}
+      {noData && (
+        <div className="no-data-banner">
+          No data matches the current filters. Try adjusting the time range, arms, or vehicle types.
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="tab-bar">
@@ -92,7 +121,13 @@ export default function Dashboard({ data, onReset }) {
       <div className="tab-content">
         {activeTab === 'overview' && (
           <>
-            <MetadataCard meta={data.meta} arms={data.arms} />
+            <MetadataCard
+              meta={effectiveData.meta}
+              arms={effectiveData.arms}
+              filters={filters}
+              armRenames={armRenames}
+              onRenameArm={handleRenameArm}
+            />
             <AnalyticsPanel analytics={analytics} pcuMode={pcuMode} />
             <div className="charts-grid">
               <div className="chart-full">
@@ -109,8 +144,16 @@ export default function Dashboard({ data, onReset }) {
               <DirectionChart analytics={analytics} />
               <TurnBreakdownChart analytics={analytics} />
             </div>
+            {hasToArm && (
+              <TurnMatrix
+                data={effectiveData}
+                analytics={analytics}
+                filters={filters}
+                pcuWeights={pcuMode ? pcuWeights : null}
+              />
+            )}
             <JunctionMap
-              data={data}
+              data={effectiveData}
               analytics={analytics}
               filters={filters}
               pcuWeights={pcuMode ? pcuWeights : null}
@@ -119,12 +162,16 @@ export default function Dashboard({ data, onReset }) {
         )}
 
         {activeTab === 'advanced' && (
-          <AdvancedAnalysis analytics={analytics} />
+          <>
+            <AdvancedAnalysis analytics={analytics} />
+            <HourlyHeatmap analytics={analytics} />
+            <VCPanel analytics={analytics} arms={effectiveData.arms} />
+          </>
         )}
 
         {activeTab === 'data' && (
           <RawDataTable
-            data={data}
+            data={effectiveData}
             filters={filters}
             pcuWeights={pcuMode ? pcuWeights : null}
           />

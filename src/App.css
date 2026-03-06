@@ -841,3 +841,208 @@ body {
   border-radius: 4px;
   background: linear-gradient(to right, #16a34a, #eab308, #dc2626);
 }
+
+/* ── No-data banner ── */
+.no-data-banner {
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 13px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+/* ── Arm rename ── */
+.arms-rename-hint {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.arm-chip-editable {
+  cursor: pointer;
+}
+
+.arm-chip-editable:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.arm-rename-input {
+  background: #fff;
+  border: 1.5px solid #2563eb;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: #1e293b;
+  outline: none;
+  min-width: 100px;
+  max-width: 180px;
+}
+
+.meta-filter-range {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* ── Turn Matrix ── */
+.turn-matrix-table .matrix-corner {
+  background: #f1f5f9;
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.turn-matrix-table .matrix-row-header {
+  font-weight: 600;
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.turn-matrix-table .matrix-cell {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  padding: 7px 10px;
+  transition: filter 0.1s;
+}
+
+.turn-matrix-table .matrix-cell:hover { filter: brightness(0.92); }
+
+.turn-matrix-table .matrix-total-col {
+  font-weight: 700;
+  background: #f1f5f9;
+  font-variant-numeric: tabular-nums;
+}
+
+.turn-matrix-table .matrix-total-row td {
+  border-top: 2px solid #e2e8f0;
+  font-weight: 700;
+}
+
+.turn-matrix-table .matrix-grand-total {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* ── Hourly Heatmap ── */
+.heatmap-wrapper { overflow-x: auto; }
+
+.heatmap-table {
+  border-collapse: collapse;
+  font-size: 11px;
+  width: 100%;
+}
+
+.heatmap-table th {
+  background: #f8fafc;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.heatmap-arm-col { text-align: left !important; padding-left: 10px !important; min-width: 100px; }
+.heatmap-hour-col { min-width: 40px; }
+
+.heatmap-arm-name {
+  font-weight: 600;
+  color: #374151;
+  padding: 5px 10px;
+  white-space: nowrap;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+}
+
+.heatmap-cell {
+  text-align: center;
+  padding: 5px 2px;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: filter 0.1s;
+  cursor: default;
+}
+
+.heatmap-cell:hover { filter: brightness(0.88); }
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #6b7280;
+  justify-content: center;
+}
+
+.heatmap-legend-bar { width: 100px; height: 8px; border-radius: 4px; }
+
+.heatmap-legend-gradient {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(to right, hsl(220,75%,87%), hsl(110,75%,72%), hsl(30,75%,70%), hsl(0,75%,57%));
+}
+
+/* ── V/C Panel ── */
+.vc-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.vc-table td { vertical-align: middle; }
+
+.vc-input {
+  width: 64px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 12px;
+  text-align: right;
+  background: #f8fafc;
+  color: #1e293b;
+  outline: none;
+}
+
+.vc-input:focus { border-color: #2563eb; background: #fff; }
+
+.vc-status-badge {
+  display: inline-block;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Print styles ── */
+@media print {
+  .app-header,
+  .filter-card,
+  .pcu-panel,
+  .tab-bar,
+  .dash-topbar,
+  .btn-ghost,
+  .pagination,
+  .no-data-banner { display: none !important; }
+
+  body { background: #fff; font-size: 12px; }
+
+  .app-main { padding: 0; max-width: 100%; }
+  .dashboard { gap: 12px; }
+  .card { box-shadow: none; border: 1px solid #e2e8f0; break-inside: avoid; }
+  .charts-grid { grid-template-columns: 1fr 1fr; }
+  .tab-content > * { display: block !important; }
+
+  /* Force-show all tab contents when printing */
+  .tab-content { gap: 12px; }
+}
